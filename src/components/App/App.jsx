@@ -14,6 +14,7 @@ export default function App() {
   const [images, setImages] = useState([]);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(null);
   const [status, setStatus] = useState('idle');
 
   const handleSubmit = async value => {
@@ -23,7 +24,9 @@ export default function App() {
 
     try {
       const images = await fetchImages(value);
-      setImages(images.hits);
+        const { hits, totalHits } = images;
+      setImages(hits);
+      setTotalPages(Math.ceil(totalHits / 12));
       setStatus('resolved');
     } catch (error) {
       setError(error.message);
@@ -35,15 +38,18 @@ export default function App() {
     setStatus('panding');
 
     try {
-      const images = await fetchImages(value, page + 1);
+      const nextPage = page + 1;
+      const images = await fetchImages(value, nextPage);
       setImages(prevImages => [...prevImages, ...images.hits]);
-      setPage(prevPage => prevPage + 1);
+      setPage(nextPage);
       setStatus('resolved');
     } catch (error) {
       setError(error.message);
       setStatus('rejected');
     }
   };
+
+  const isLastPage = page === totalPages;
 
   return (
     <div>
@@ -52,7 +58,7 @@ export default function App() {
 
       <ImageGallery images={images} />
 
-      {status === 'resolved' && images.length >= 12 && (
+      {status === 'resolved' && images.length >= 12 && !isLastPage && (
         <Button onClick={loadMoreImages} />
       )}
 
