@@ -1,4 +1,5 @@
-import { Component } from 'react';
+import React from 'react';
+import { useState } from 'react';
 import Searchbar from 'components/Searchbar/Searchbar';
 import { ImageGallery } from 'components/ImageGallery/ImageGallery';
 import { Button } from 'components/Button/Button';
@@ -8,68 +9,64 @@ import { ToastContainer } from 'react-toastify';
 import css from 'components/App/App.module.css';
 import 'react-toastify/dist/ReactToastify.css';
 
-export default class App extends Component {
-  state = {
-    value: '',
-    images: [],
-    error: null,
-    page: 1,
-    status: 'idle',
-  };
+export default function App() {
+  const [value, setValue] = useState('');
+  const [images, setImages] = useState([]);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState('idle');
 
-  handleSubmit = async value => {
-    this.setState({ value, status: 'panding', error: null });
+  const handleSubmit = async value => {
+    setValue(value);
+    setStatus('panding');
+    setError(null);
 
     try {
       const images = await fetchImages(value);
-      this.setState({ images: images.hits, status: 'resolved' });
+      setImages(images.hits);
+      setStatus('resolved');
     } catch (error) {
-      this.setState({ error: error.message, status: 'rejected' });
+      setError(error.message);
+      setStatus('rejected');
     }
   };
 
-  loadMoreImages = async () => {
-    this.setState({ status: 'panding' });
+  const loadMoreImages = async () => {
+    setStatus('panding');
 
     try {
-      const { value, page } = this.state;
       const images = await fetchImages(value, page + 1);
-      this.setState(prevState => ({
-        images: [...prevState.images, ...images.hits],
-        page: prevState.page + 1,
-        status: 'resolved',
-      }));
+      setImages(prevImages => [...prevImages, ...images.hits]);
+      setPage(prevPage => prevPage + 1);
+      setStatus('resolved');
     } catch (error) {
-      this.setState({ error: error.message, status: 'rejected' });
-      console.log(error.message);
+      setError(error.message);
+      setStatus('rejected');
     }
   };
 
-  render() {
-    const { value, status, images, error } = this.state;
-    return (
-      <div>
-        <Searchbar onSubmit={this.handleSubmit} />
-        {status === 'panding' && <Loader />}
+  return (
+    <div>
+      <Searchbar onSubmit={handleSubmit} />
+      {status === 'panding' && <Loader />}
 
-        <ImageGallery images={images} />
+      <ImageGallery images={images} />
 
-        {status === 'resolved' && images.length >= 12 && (
-          <Button onClick={this.loadMoreImages} />
-        )}
+      {status === 'resolved' && images.length >= 12 && (
+        <Button onClick={loadMoreImages} />
+      )}
 
-        {status === 'rejected' && (
-          <h1 className={css.error}>
-            Whoops, something went wrong: {error.message}
-          </h1>
-        )}
+      {status === 'rejected' && (
+        <h1 className={css.error}>
+          Whoops, something went wrong: {error.message}
+        </h1>
+      )}
 
-        {status !== 'idle' && status !== 'panding' && images.length === 0 && (
-          <h1 className={css.error}>No images by request "{value}".</h1>
-        )}
+      {status !== 'idle' && status !== 'panding' && images.length === 0 && (
+        <h1 className={css.error}>No images by request "{value}".</h1>
+      )}
 
-        <ToastContainer autoClose={2000} />
-      </div>
-    );
-  }
+      <ToastContainer autoClose={2000} />
+    </div>
+  );
 }
